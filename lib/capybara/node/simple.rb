@@ -178,6 +178,10 @@ module Capybara
         Capybara.session_options
       end
 
+      def initial_visibility
+        nil
+      end
+
     private
 
       def option_value(option)

@@ -340,7 +340,8 @@ module Capybara
             begin
               el ||= find(selector, locator, options.merge(visible: :all))
               el.session.find(:label, for: el, visible: true).click unless el.checked? == checked
-            rescue StandardError # swallow extra errors - raise original
+            rescue StandardError => e # swallow extra errors - raise original
+              puts e
               raise err
             end
           end

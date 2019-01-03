@@ -157,9 +157,17 @@ module Capybara
 
       def find_nodes_by_selector_format(node, exact)
         if selector.format == :css
-          node.find_css(css)
+          if (node.method(:find_css).arity == 2) && (visible != :all)
+            node.find_css(css, true)
+          else
+            node.find_css(css)
+          end
         else
-          node.find_xpath(xpath(exact))
+          if (node.method(:find_xpath).arity == 2) && (visible != :all)
+            node.find_xpath(xpath(exact), true)
+          else
+            node.find_xpath(xpath(exact))
+          end
         end
       end
 
@@ -318,12 +326,12 @@ module Capybara
       def matches_system_filters?(node)
         applied_filters << :system
 
+        matches_visible_filter?(node) &&
         matches_id_filter?(node) &&
           matches_class_filter?(node) &&
           matches_style_filter?(node) &&
           matches_text_filter?(node) &&
-          matches_exact_text_filter?(node) &&
-          matches_visible_filter?(node)
+          matches_exact_text_filter?(node)
       end
 
       def matches_id_filter?(node)
@@ -377,8 +385,10 @@ module Capybara
 
       def matches_visible_filter?(node)
         case visible
-        when :visible then node.visible?
+        when :visible then
+          node.initial_visibility || (node.initial_visibility.nil? && node.visible?)
         when :hidden then !node.visible?
+          (node.initial_visibility == false) || (node.initial_visibility.nil? && !node.visible?)
         else true
         end
       end
