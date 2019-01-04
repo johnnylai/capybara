@@ -108,7 +108,9 @@ module Capybara
         expr = apply_expression_filters(@expression)
         expr = exact ? expr.to_xpath(:exact) : expr.to_s if expr.respond_to?(:to_xpath)
         expr = filtered_expression(expr)
-        expr = "(#{expr})[#{XPath.contains(options[:text])}]" if first_try? && options[:text].is_a?(String)
+        if first_try? && options[:text].is_a?(String) && @resolved_node&.respond_to?(:session) && @resolved_node.session.driver.wait?
+          expr = "(#{expr})[#{XPath.contains(options[:text])}]"
+        end
         expr
       end
 
