@@ -14,6 +14,7 @@ module Capybara
                      **options,
                      &filter_block)
         @resolved_node = nil
+        @resolved_count = 0
         @options = options.dup
         super(@options)
         self.session_options = session_options
@@ -106,7 +107,9 @@ module Capybara
         exact = exact? if exact.nil?
         expr = apply_expression_filters(@expression)
         expr = exact ? expr.to_xpath(:exact) : expr.to_s if expr.respond_to?(:to_xpath)
-        filtered_expression(expr)
+        expr = filtered_expression(expr)
+        expr = "(#{expr})[#{XPath.contains(options[:text])}]" if first_try? && options[:text].is_a?(String)
+        expr
       end
 
       def css
@@ -117,6 +120,7 @@ module Capybara
       def resolve_for(node, exact = nil)
         applied_filters.clear
         @resolved_node = node
+        @resolved_count += 1
         node.synchronize do
           children = find_nodes_by_selector_format(node, exact).map(&method(:to_element))
           Capybara::Result.new(children, self)
@@ -137,6 +141,10 @@ module Capybara
       end
 
     private
+
+      def first_try?
+        @resolved_count == 1
+      end
 
       def show_for_stage(only_applied)
         lambda do |stage = :any|
@@ -162,12 +170,14 @@ module Capybara
           else
             node.find_css(css)
           end
-        else
+        elsif selector.format == :xpath
           if (node.method(:find_xpath).arity == 2) && (visible != :all)
             node.find_xpath(xpath(exact), true)
           else
             node.find_xpath(xpath(exact))
           end
+        else
+          raise ArgumentError, "Unknown format: #{selector.format}"
         end
       end
 
@@ -327,7 +337,7 @@ module Capybara
         applied_filters << :system
 
         matches_visible_filter?(node) &&
-        matches_id_filter?(node) &&
+          matches_id_filter?(node) &&
           matches_class_filter?(node) &&
           matches_style_filter?(node) &&
           matches_text_filter?(node) &&
@@ -387,7 +397,7 @@ module Capybara
         case visible
         when :visible then
           node.initial_visibility || (node.initial_visibility.nil? && node.visible?)
-        when :hidden then !node.visible?
+        when :hidden then
           (node.initial_visibility == false) || (node.initial_visibility.nil? && !node.visible?)
         else true
         end

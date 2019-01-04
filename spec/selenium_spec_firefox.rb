@@ -15,19 +15,13 @@ browser_options.profile = Selenium::WebDriver::Firefox::Profile.new.tap do |prof
   profile['browser.helperApps.neverAsk.saveToDisk'] = 'text/csv'
 end
 
-$call_count = 0
-
 Capybara.register_driver :selenium_firefox do |app|
   # ::Selenium::WebDriver.logger.level = "debug"
   Capybara::Selenium::Driver.new(
     app,
     browser: :firefox,
     options: browser_options,
-    timeout: 31,
-    # listener: lambda do |*args|
-    #   $call_count += 1
-    #   puts "Selenium call: #{$call_count}"
-    # end
+    timeout: 31
     # Get a trace level log from geckodriver
     # :driver_opts => { args: ['-vv'] }
   )
